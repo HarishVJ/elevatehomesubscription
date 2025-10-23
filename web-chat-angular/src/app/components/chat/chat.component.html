@@ -1,0 +1,136 @@
+<div class="container">
+  <div class="chat-header">
+    <h1>🔍 Appliance Research Assistant</h1>
+    <p>Find product specifications and replacements</p>
+  </div>
+
+  <div class="chat-container" id="chatContainer">
+    <div *ngFor="let message of messages" 
+         class="message" 
+         [ngClass]="message.isUser ? 'user-message' : 'bot-message'">
+      <div class="message-content" [innerHTML]="message.content"></div>
+    </div>
+  </div>
+
+  <!-- Step 1: Appliance Type -->
+  <div *ngIf="currentStep === 'appliance_type' && !isLoading" class="input-container">
+    <div class="input-group">
+      <label>What type of appliance are you looking for?</label>
+      <select [(ngModel)]="applianceType" class="form-control">
+        <option value="">Select appliance type...</option>
+        <option *ngFor="let type of applianceTypes" [value]="type">
+          {{ capitalize(type) }}
+        </option>
+      </select>
+    </div>
+    <div class="button-group">
+      <button class="btn-primary" 
+              (click)="submitApplianceType()" 
+              [disabled]="!applianceType">
+        Next →
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Brand -->
+  <div *ngIf="currentStep === 'brand' && !isLoading" class="input-container">
+    <div class="input-group">
+      <label>Select or enter the brand:</label>
+      <select [(ngModel)]="brand" class="form-control">
+        <option value="">Select a brand...</option>
+        <option *ngFor="let b of brands" [value]="b">{{ b }}</option>
+      </select>
+      <input type="text" 
+             [(ngModel)]="brand" 
+             class="form-control" 
+             placeholder="Or type brand name..." 
+             style="margin-top: 10px;">
+    </div>
+    <div class="button-group">
+      <button class="btn-secondary" (click)="goBack('appliance_type')">← Back</button>
+      <button class="btn-primary" 
+              (click)="submitBrand()" 
+              [disabled]="!brand">
+        Next →
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 3: Model -->
+  <div *ngIf="currentStep === 'model' && !isLoading" class="input-container">
+    <div class="input-group">
+      <label>Enter the model number:</label>
+      <input type="text" 
+             [(ngModel)]="model" 
+             class="form-control" 
+             placeholder="e.g., JGB735, ABC123..."
+             (keyup.enter)="model && submitModel()">
+      <small style="color: #6c757d; margin-top: 5px;">
+        Enter the model number as shown on the appliance
+      </small>
+    </div>
+    <div class="button-group">
+      <button class="btn-secondary" (click)="goBack('brand')">← Back</button>
+      <button class="btn-primary" 
+              (click)="submitModel()" 
+              [disabled]="!model">
+        Next →
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 4: Brand-for-Brand -->
+  <div *ngIf="currentStep === 'brand_for_brand' && !isLoading" class="input-container">
+    <div class="input-group">
+      <label>Brand-for-brand coverage?</label>
+      <select [(ngModel)]="brandForBrand" class="form-control">
+        <option [ngValue]="false">No - Show all brands</option>
+        <option [ngValue]="true">Yes - Same brand only</option>
+      </select>
+    </div>
+    <div class="button-group">
+      <button class="btn-secondary" (click)="goBack('model')">← Back</button>
+      <button class="btn-primary" (click)="submitBrandForBrand()">
+        Next →
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 5: Dollar Limit -->
+  <div *ngIf="currentStep === 'dollar_limit' && !isLoading" class="input-container">
+    <div class="input-group">
+      <label>Maximum price (optional):</label>
+      <input type="number" 
+             [(ngModel)]="dollarLimit" 
+             class="form-control" 
+             placeholder="e.g., 2000" 
+             min="0" 
+             step="100"
+             (keyup.enter)="submitDollarLimit()">
+      <small style="color: #6c757d; margin-top: 5px;">
+        Leave empty for no limit
+      </small>
+    </div>
+    <div class="button-group">
+      <button class="btn-secondary" (click)="goBack('brand_for_brand')">← Back</button>
+      <button class="btn-primary" (click)="submitDollarLimit()">
+        🔍 Search Now
+      </button>
+    </div>
+  </div>
+
+  <!-- Results: Restart Button -->
+  <div *ngIf="currentStep === 'results' && !isLoading" class="input-container">
+    <div class="button-group">
+      <button class="btn-primary" (click)="restart()">
+        🔄 Start New Search
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div *ngIf="isLoading" class="loading-indicator">
+    <div class="spinner"></div>
+    <p>Searching...</p>
+  </div>
+</div>

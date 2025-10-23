@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        #output {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    
+    <button onclick="testHealth()">Test Health Check</button>
+    <button onclick="testSearch()">Test Complete Search</button>
+    <button onclick="clearOutput()">Clear</button>
+    
+    <div id="output"></div>
+
+    <script>
+        const API_URL = 'http://localhost:5001/api';
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            output.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        async function testHealth() {
+            log('Testing health check...');
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                log(`Status: ${response.status}`, 'success');
+                const data = await response.json();
+                log(`Response: ${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                log(`Full error: ${JSON.stringify(error, null, 2)}`, 'error');
+            }
+        }
+        
+        async function testSearch() {
+            log('Testing complete search...');
+            log('Request: GE JGB735 range');
+            
+            const requestData = {
+                brand: 'GE',
+                model: 'JGB735',
+                appliance_type: 'range',
+                brand_for_brand: false,
+                dollar_limit: null
+            };
+            
+            try {
+                const startTime = Date.now();
+                log('Sending POST request...');
+                
+                const response = await fetch(`${API_URL}/complete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const endTime = Date.now();
+                const duration = ((endTime - startTime) / 1000).toFixed(2);
+                
+                log(`Status: ${response.status} (took ${duration}s)`, 'success');
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✓ Success!`, 'success');
+                    log(`Original Product: ${data.original_product.brand} ${data.original_product.model}`, 'success');
+                    log(`Type: ${data.original_product.type}, Size: ${data.original_product.size}, Fuel: ${data.original_product.fuel}`, 'success');
+                    log(`Features: ${data.original_product.features.join(', ')}`, 'success');
+                    log(`Replacements found: ${data.replacements.length}`, 'success');
+                    
+                    if (data.replacements.length > 0) {
+                        log(`Top replacement: ${data.replacements[0].product_name} - $${data.replacements[0].price}`, 'success');
+                    }
+                } else {
+                    log(`✗ Failed: ${data.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`✗ Error: ${error.message}`, 'error');
+                log(`Error type: ${error.name}`, 'error');
+                log(`Full error: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`, 'error');
+            }
+        }
+        
+        // Auto-test on load
+        window.onload = () => {
+            log('Page loaded. Click buttons to test API connection.');
+            log(`API URL: ${API_URL}`);
+        };
+    </script>
+</body>
+</html>
