@@ -1,253 +1,271 @@
-# Product Research Agent
+# Elevate Home Subscription - Appliance Research Agent System
 
-A specialized Python agent for finding and extracting appliance specifications from web search results using Google Custom Search API with **AI-enhanced hybrid extraction**.
+A comprehensive AI-powered agent system for finding appliance specifications and replacement options using Google Custom Search API with **AI-enhanced hybrid extraction**.
 
-## Features
+## 🎯 Overview
+
+This system consists of three specialized AI agents working together:
+
+1. **Product Research Agent** - Finds and extracts original appliance specifications
+2. **Replacement Search Agent** - Discovers comparable replacement products from retailers
+3. **Chat Interface Agent** - Provides conversational user interface
+
+## ✨ Features
 
 - **Hybrid Extraction**: Rule-based + AI fallback for optimal cost/accuracy balance
 - **AI-Powered**: GPT-4o-mini for intelligent specification extraction when needed
+- **Multi-Retailer Search**: Searches Home Depot, Lowe's, Best Buy, P.C. Richard & Son
+- **Smart Matching**: Intelligent scoring algorithm ranks replacements by compatibility
+- **Web Interface**: Angular-based chat interface for easy user interaction
+- **REST API**: Flask server with comprehensive endpoints
 - **Cost-Efficient**: Only uses AI when rule-based quality is low (~$0.003/product avg)
-- **Web Search Integration**: Uses Google Custom Search API to find product information
 - **Structured Output**: Returns data in standardized JSON format
 - **Multi-Appliance Support**: Handles ranges, dishwashers, refrigerators, and microwaves
-- **Confidence Scoring**: Rates source reliability (high/medium/low)
-- **Extraction Method Tracking**: Know whether rule-based or AI was used
 
-## Installation
+## 📚 Documentation
+
+### Getting Started
+- **[START_HERE.md](START_HERE.md)** - Quick start guide
+- **[AGENTS_OVERVIEW.md](AGENTS_OVERVIEW.md)** - Detailed agent documentation
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Command reference
+
+### AI Agent Prompts (For External Systems)
+- **[PRODUCT_RESEARCH_AGENT_PROMPT.md](PRODUCT_RESEARCH_AGENT_PROMPT.md)** - AI prompt for Product Research Agent
+- **[CHAT_INTERFACE_AGENT_PROMPT.md](CHAT_INTERFACE_AGENT_PROMPT.md)** - AI prompt for Chat Interface Agent
+- **[REPLACEMENT_AGENT_DOCS.md](REPLACEMENT_AGENT_DOCS.md)** - Replacement Search Agent documentation
+
+### Technical Documentation
+- **[AGENT_COMMUNICATION.md](AGENT_COMMUNICATION.md)** - How agents communicate
+- **[SYSTEM_FLOW_DIAGRAM.md](SYSTEM_FLOW_DIAGRAM.md)** - Complete system architecture
+- **[SCORING_ALGORITHM.md](SCORING_ALGORITHM.md)** - Replacement matching algorithm
+
+### Deployment
+- **[AZURE_DEPLOYMENT_GUIDE.md](AZURE_DEPLOYMENT_GUIDE.md)** - Azure Container Apps deployment
+- **[STATIC_WEBSITE_DEPLOYMENT.md](STATIC_WEBSITE_DEPLOYMENT.md)** - Static website deployment
+- **[WEB_INTERFACE_GUIDE.md](WEB_INTERFACE_GUIDE.md)** - Web interface setup
+
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Quick Start
-
-### Option 1: With AI Enhancement (Recommended)
+### Option 1: Complete Workflow (API Server)
 
 ```bash
-# Set OpenAI API key
-export OPENAI_API_KEY="sk-your-key-here"
+# Start the API server
+python3 api_server.py
+
+# In another terminal, open the web interface
+cd web-chat
+open index.html
 ```
+
+### Option 2: Python API Usage
 
 ```python
 from product_research_agent import ProductResearchAgent
+from replacement_search_agent import ReplacementSearchAgent
 
-# Initialize with AI capabilities
-agent = ProductResearchAgent(
+# Initialize agents
+research_agent = ProductResearchAgent(
     api_key="YOUR_GOOGLE_API_KEY",
     search_engine_id="YOUR_SEARCH_ENGINE_ID",
-    use_ai=True  # Enable AI fallback (default)
+    use_ai=True
 )
 
-result = agent.research("GE", "JGB735", "range")
-print(f"Method: {result.extraction_method}")  # 'rule-based' or 'ai'
-print(f"Size: {result.product.size}")
-```
-
-### Option 2: Rule-Based Only (No AI)
-
-```python
-agent = ProductResearchAgent(
-    api_key="YOUR_GOOGLE_API_KEY",
-    search_engine_id="YOUR_SEARCH_ENGINE_ID",
-    use_ai=False  # Disable AI
-)
-
-result = agent.research("GE", "JGB735", "range")
-# Always uses rule-based extraction (cheapest)
-```
-
-## Usage
-
-### Basic Usage
-
-```python
-from product_research_agent import ProductResearchAgent
-
-# Initialize agent with API credentials
-agent = ProductResearchAgent(
-    api_key="YOUR_GOOGLE_API_KEY",
+replacement_agent = ReplacementSearchAgent(
+    google_api_key="YOUR_GOOGLE_API_KEY",
     search_engine_id="YOUR_SEARCH_ENGINE_ID"
 )
 
-# Research a product
-result_json = agent.research_json(
-    brand="GE",
-    model="JGB735",
-    appliance_type="range"
-)
+# Step 1: Research original product
+result = research_agent.research("GE", "JGB735", "range")
 
-print(result_json)
-```
-
-### Advanced Usage
-
-```python
-from product_research_agent import ProductResearchAgent
-
-agent = ProductResearchAgent(api_key="...", search_engine_id="...")
-
-# Get structured result object
-result = agent.research(
-    brand="Samsung",
-    model="DW80R9950US",
-    appliance_type="dishwasher"
-)
-
+# Step 2: Find replacements
 if result.success:
-    print(f"Type: {result.product.type}")
-    print(f"Size: {result.product.size}")
-    print(f"Fuel: {result.product.fuel}")
-    print(f"Features: {', '.join(result.product.features)}")
-    print(f"Source: {result.source}")
-    print(f"Confidence: {result.confidence}")
-else:
-    print(f"Error: {result.error}")
+    product_spec = {
+        'type': result.product.type,
+        'size': result.product.size,
+        'fuel': result.product.fuel,
+        'features': result.product.features
+    }
+    replacements = replacement_agent.search(product_spec)
+    
+    print(f"Found {len(replacements.replacements)} replacements")
 ```
 
-## API Configuration
+## 🏗️ Architecture
 
-### Required
+```
+┌─────────────────┐
+│   Web Browser   │
+│  (Chat UI)      │
+└────────┬────────┘
+         │ HTTPS
+         ▼
+┌─────────────────┐
+│  Flask API      │
+│  (api_server)   │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    ▼         ▼
+┌────────┐ ┌────────────┐
+│Product │ │Replacement │
+│Research│ │Search Agent│
+└────┬───┘ └──────┬─────┘
+     │            │
+     ▼            ▼
+┌─────────────────────┐
+│  Google Custom      │
+│  Search API         │
+└─────────────────────┘
+```
+
+## 📋 API Endpoints
+
+### Health Check
+```bash
+GET /api/health
+```
+
+### Research Product
+```bash
+POST /api/research
+{
+  "brand": "GE",
+  "model": "JGB735",
+  "appliance_type": "range"
+}
+```
+
+### Find Replacements
+```bash
+POST /api/replacements
+{
+  "brand": "GE",
+  "model": "JGB735",
+  "type": "range",
+  "size": "30 inch",
+  "fuel": "gas",
+  "features": ["convection", "air fry"],
+  "brand_for_brand": false,
+  "dollar_limit": 2000
+}
+```
+
+### Complete Workflow
+```bash
+POST /api/complete
+{
+  "brand": "GE",
+  "model": "JGB735",
+  "appliance_type": "range",
+  "brand_for_brand": false,
+  "dollar_limit": 2000
+}
+```
+
+## 🔧 Configuration
+
+### Required API Keys
 1. **Google Custom Search API Key**: Get from [Google Cloud Console](https://console.cloud.google.com/)
 2. **Search Engine ID (cx)**: Create at [Programmable Search Engine](https://programmablesearchengine.google.com/)
 
 ### Optional (for AI Enhancement)
 3. **OpenAI API Key**: Get from [OpenAI Platform](https://platform.openai.com/)
    - Set as environment variable: `export OPENAI_API_KEY="sk-..."`
-   - Or pass directly: `openai_api_key="sk-..."`
 
-## Output Format
+## 💰 Cost & Performance
 
-```json
-{
-  "success": true,
-  "product": {
-    "type": "range",
-    "size": "30 inch",
-    "fuel": "gas",
-    "features": [
-      "convection",
-      "air fry",
-      "self cleaning",
-      "5 burners",
-      "storage drawer"
-    ]
-  },
-  "source": "geappliances.com",
-  "confidence": "high",
-  "extraction_method": "rule-based"
-}
-```
+| Component | Cost/Request | Time | Accuracy |
+|-----------|-------------|------|----------|
+| Product Research | ~$0.003 | 1-2s | 85-95% |
+| Replacement Search | ~$0.028 | 2-4s | 90-95% |
+| **Complete Workflow** | **~$0.03** | **5-10s** | **90%+** |
 
-## Supported Appliance Types
+## 🧪 Testing
 
-- **range**: Gas, electric, or dual fuel cooking ranges
-- **dishwasher**: Built-in and portable dishwashers
-- **refrigerator**: All refrigerator configurations
-- **microwave**: Countertop, over-the-range, and built-in microwaves
-
-## Extraction Methods
-
-- **rule-based**: Fast keyword matching (free, 70-80% accuracy)
-- **ai**: GPT-4o-mini extraction (~$0.002-0.005, 90-95% accuracy)
-
-The agent automatically chooses the best method based on quality assessment.
-
-## Cost & Performance
-
-| Mode | Cost/Product | Accuracy | Speed | Best For |
-|------|-------------|----------|-------|----------|
-| Rule-based only | ~$0.001 | 70-80% | Fast | Budget-critical |
-| Hybrid (default) | ~$0.003 | 85-90% | Fast | Production |
-| AI always | ~$0.005 | 90-95% | Slower | High accuracy |
-
-**Example**: 1,000 products with hybrid mode = ~$3 (vs $5 for all AI, $1 for all rule-based)
-
-## Confidence Levels
-
-- **high**: Information from manufacturer/official websites
-- **medium**: Information from major retailers (Home Depot, Lowe's, Best Buy, etc.)
-- **low**: Information from reviews or unclear sources
-
-## Error Handling
-
-The agent returns structured error responses:
-
-```json
-{
-  "success": false,
-  "error": "No search results found for Brand Model",
-  "product": null
-}
-```
-
-## Architecture
-
-### Classes
-
-- **ProductResearchAgent**: Main agent class
-  - `search()`: Execute Google Custom Search API query
-  - `analyze_results()`: Extract specifications from search results
-  - `research()`: Complete research workflow
-  - `research_json()`: Research with JSON output
-
-- **ProductSpecification**: Data class for product specs
-  - `type`: Appliance category
-  - `size`: Physical dimensions
-  - `fuel`: Power/fuel type
-  - `features`: List of features
-
-- **ResearchResult**: Data class for research results
-  - `success`: Operation status
-  - `product`: ProductSpecification object
-  - `source`: Primary source domain
-  - `confidence`: Reliability rating
-  - `error`: Error message if failed
-
-## Feature Detection
-
-The agent automatically detects appliance-specific features:
-
-### Range Features
-- Convection, air fryer, self-cleaning
-- Burner count and types
-- Storage drawer, warming drawer
-- WiFi/smart capabilities
-
-### Dishwasher Features
-- Noise level (decibels)
-- Third rack, soil sensor
-- Cycle count and types
-- Stainless steel tub
-
-### Refrigerator Features
-- Ice maker, water dispenser
-- Door configuration
-- Capacity (cubic feet)
-- Smart features
-
-### Microwave Features
-- Convection, sensor cooking
-- Installation type
-- Power levels
-- Ventilation capabilities
-
-## Testing
-
-### Run Examples
 ```bash
-python3 example.py        # Basic examples
-python3 example_ai.py     # AI features demo
-```
-
-### Run Test Suite
-```bash
+# Test agents directly
 python3 test_agent.py
+
+# Test API server
+curl http://localhost:5000/api/health
+
+# Run examples
+python3 example.py
+python3 example_ai.py
+python3 example_replacement.py
 ```
 
-All 6 tests should pass:
-- ✓ Basic Search
-- ✓ JSON Output
-- ✓ Different Appliances
-- ✓ Error Handling
-- ✓ Feature Extraction
-- ✓ Confidence Scoring
+## 📦 Project Structure
+
+```
+ElevatePOC/
+├── product_research_agent.py       # Product Research Agent
+├── replacement_search_agent.py     # Replacement Search Agent
+├── api_server.py                   # Flask API server
+├── web-chat/                       # Static web interface
+├── web-chat-angular/               # Angular web interface
+├── PRODUCT_RESEARCH_AGENT_PROMPT.md  # AI prompt for external systems
+├── CHAT_INTERFACE_AGENT_PROMPT.md    # AI prompt for external systems
+└── [Documentation files...]
+```
+
+## 🌟 Key Features
+
+### Product Research Agent
+✅ Hybrid extraction (rule-based + AI)  
+✅ Confidence scoring  
+✅ Multiple sources  
+✅ Fallback methods  
+✅ Structured output
+
+### Replacement Search Agent
+✅ Multi-retailer search (4 retailers)  
+✅ Parallel processing  
+✅ Smart scoring algorithm  
+✅ Flexible filtering  
+✅ Detailed matching
+
+### Chat Interface Agent
+✅ Conversational UI  
+✅ Step-by-step guidance  
+✅ Real-time search  
+✅ Rich results display  
+✅ Error handling
+
+## 🚢 Deployment
+
+### Local Development
+```bash
+python3 api_server.py
+```
+
+### Azure Container Apps
+```bash
+./azure-deploy.sh
+```
+
+### Static Website (Azure Storage)
+```bash
+./deploy-static-website.sh
+```
+
+## 📖 Support
+
+- See [TROUBLESHOOTING_GUIDE.md](TROUBLESHOOTING_GUIDE.md) for common issues
+- Check [AGENTS_OVERVIEW.md](AGENTS_OVERVIEW.md) for detailed documentation
+- Review [SYSTEM_FLOW_DIAGRAM.md](SYSTEM_FLOW_DIAGRAM.md) for architecture
+
+## 📄 License
+
+This project is part of the Elevate Home Subscription system.
+
+## 🤝 Contributing
+
+For questions or contributions, please refer to the documentation files in this repository.
